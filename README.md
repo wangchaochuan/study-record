@@ -2,9 +2,12 @@
 
 记录自己的学习情况，持续学习，持续进步！
 
-Stay hungry stay foolish connotes an insight that we should never stop learning and we should always try new things. We should be courageous and never be afraid to go the extra mile.
+`Stay hungry stay foolish connotes an insight that we should never stop learning and we should always try new things. We should be courageous and never be afraid to go the extra mile.`
+
+如果您觉得这份学习笔记对您有所帮助的话,麻烦动动您的小手,给个`star`吧
 
 
 ## 网络篇(network)
 
 ### http协议零碎知识
+
