@@ -405,6 +405,7 @@ DNS服务器解析域名的过程:
 服务端收到连接请求报文段后，如果同意连接，则会发送一个应答，该应答中也会包含自身的数据通讯初始序号，发送完成后便进入 `SYN-RECEIVED` 状态
 ### 第三次握手
 当客户端收到连接同意的应答后，还要向服务端发送一个确认报文。客户端发完这个报文段后便进入 `ESTABLISHED` 状态，服务端收到这个应答后也进入 `ESTABLISHED` 状态，此时连接建立成功
+![](https://img-blog.csdnimg.cn/5ce2c71bdae1435cb7f23beb98bef792.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBAeXVuMTcu,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 ## TCP什么要三次握手呢？两次不行吗？
 ### 三次握手的必要性
 为了确认双方的接收能力和发送能力都正常
@@ -419,6 +420,7 @@ DNS服务器解析域名的过程:
 服务端如果此时还有没发完的数据会继续发送，完毕后会向客户端发送连接释放请求，然后服务端便进入 `LAST-ACK` 状态
 ### 第四次挥手
 客户端收到释放请求后，向服务端发送确认应答，此时客户端进入 `TIME-WAIT` 状态。该状态会持续 `2MSL`（最大段生存期，指报文段在网络中生存的时间，超时会被抛弃） 时间，若该时间段内没有服务端的重发请求的话，就进入 `CLOSED` 状态。当服务端收到确认应答后，也便进入 `CLOSED` 状态。
+![](https://img-blog.csdnimg.cn/3192b435ec7b47cea92a65ffaac65024.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBAeXVuMTcu,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 ## TCP为什么需要四次挥手呢
 因为当服务端收到客户端的`SYN`连接请求报文后，可以直接发送`SYN+ACK`报文。其中`ACK`报文是用来应答的，`SYN`报文是用来同步的。但是关闭连接时，当服务端收到`FIN`报文时，很可能并不会立即关闭`SOCKET`，所以只能先回复一个`ACK`报文，告诉客户端，"你发的FIN报文我收到了"。只有等到我服务端所有的报文都发送完了，我才能发送`FIN`报文，因此不能一起发送，故需要四次挥手
 ## token是什么
@@ -465,4 +467,56 @@ DNS服务器解析域名的过程:
 #### 方式三
 在响应拦截器中拦截，判断`token` 返回过期后，调用刷新`token`接口
 
+## OSI的七层模型
+![](https://img-blog.csdnimg.cn/23ab1645bf264f7b93ce8bd409f5ad86.png#pic_center)
 
+`OSI(Open System Interconnection)`，即开放系统互联。是`ISO`（国际标准化组织）制定的一个用于计算机或通信系统间互联的标准体系，一般称为`OSI参考模型`或**七层模型**。
+
+![](https://img-blog.csdnimg.cn/0f827d21c05249adb44802cc1b74c899.png)
+
+### 物理层
+为数据端设备提供原始的比特流的传输的通路。建立、维护、断开物理连接。
+常见设备：**网线、集线器、中继器、调制解调器**。
+### 数据链路层
+在通信实体间建立数据链路连接、进行硬件地址（`MAC地址`）寻址、差错校验等。
+常见设备：网卡、网桥、**交换机**。
+主要协议：**ARP地址解析协议**、`RARP`逆向地址解析协议。 
+### 网络层
+为数据在结点之间传输创建逻辑链路，并分组转发数据。
+常见设备：**路由器**。
+主要协议：`ICMP`（互联网控制信息协议）、`IGMP`（互联网和管理协议）、`IP(IPv4、IPv6`)（互联网协议）
+### 传输层
+提供应用进程之间的逻辑通信。定义传输数据的协议端口号，以及流控和差错校验。
+主要协议：`TCP`传输控制协议、`UDP`用户数据报协议。
+
+一些常见应用协议端口号：
+![](https://img-blog.csdnimg.cn/a231c963fca74b21b9de29d9c2dafa20.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBAeXVuMTcu,size_17,color_FFFFFF,t_70,g_se,x_16#pic_center)
+### 会话层
+建立、管理和终止会话（session）。
+主要协议：`SSL`（安全套接字层协议）、`TLS`（传输层安全协议）
+### 表示层
+对应用层数据编码，提供数据格式转换服务。
+定义数据格式：JPEG、ASCII、EBCDIC、DES、GIF等。
+### 应用层
+提供应用接口，为用户直接提供各种网络服务。
+主要协议：`HTTP/HTTPS`（超文本传输协议）、`FTP`（文件传输协议）、`SMTP`（简单邮件传输协议）、`TELNET`（TCP/IP终端仿真协议）、`DHCP`（动态主机配置协议）、`TFTP`（简单文件传输协议）、`SNMP`（简单网络管理协议）
+
+![](https://img-blog.csdnimg.cn/2ea75efd89ed4a0d96db37e80b23ba27.gif)
+
+## TCP/IP四层模型
+![](https://img-blog.csdnimg.cn/13bcbb17d12d425490c325d208ce3ad0.png#pic_center)
+
+### 网络接口层
+实现了网卡接口的网络驱动程序，以处理数据在物理媒介（如以太网、令牌环等）上的传输。
+这一层包含`CSMA/CDCarrier Sense Multiple Access With Collision Detection`(即载波侦听多路访问/冲突检测和`CSMA/CA(Carrier Sense multipleAccess With Collision Avoidance`),即载波监听多路访问/冲突避免，都是争用型的介质访问控制协议，位于数据链路层，前者用于有线网络而后者用于无线网络。
+### 网际层（网络层）
+本层主要包含IP协议、RIP路由信息协议，负责数据的包装、寻址和路由转发。同时还包含ICMP（互联网控制报文协议）用来提供网络诊断信息。本层还包含`ARP地址解析协议和RARP逆向地址解析协议`。它们实现了IP地址和主机物理地址（通常是MAC地址，以太网、令牌环和802.11无线网络都使用MAC地址）之间的转换。
+### 传输层
+为两台主机上的应用程序提供端到端的通信。与网际层使用的逐跳通信不同，传输层只关心通信的起始端和目的端，而不在乎数据包的中转过程。
+主要包括TCP协议提供可靠的数据流运输服务和UDP协议提供不可靠的数据报服务。
+### 应用层
+负责处理应用程序的逻辑。
+
+## 七层模型和四层模型对比
+
+![](https://img-blog.csdnimg.cn/9f20be70376e4804a2e58ae377760700.png)
