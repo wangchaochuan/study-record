@@ -141,7 +141,9 @@ GET类型的CSRF利用非常简单，只需要一个HTTP请求，一般会这样
 - `None` 任何情况下都会携带
 
 ## ClickJacking(点击劫持)
-`Clickjacking(点击劫持)`是一种通过视觉欺骗的手段来达到攻击目的手段。往往是攻击者将目标网站通过 `iframe` 嵌入到自己的网页中，通过 `opacity` 等手段设置 `iframe` 为透明的，使得肉眼不可见，这样一来当用户在攻击者的网站中操作的时候，比如点击某个按钮(这个按钮的顶层其实是 `iframe`)，从而实现目标网站被点击劫持。
+`Clickjacking(点击劫持)`是一种视觉上的欺骗手段，攻击者通过使用一个透明的`iframe`(一般是通过设置`opacity`的方式),覆盖在一个网页上，然后诱使用户在该页面上进行操作，通过调整`iframe`页面的位置，可以使得伪造的页面恰好和`iframe`里受害页面里一些功能重合（按钮），以达到窃取用户信息或者劫持用户操作的目的。
+
+`Clickjacking`是仅此于`XSS`和`CSRF`的前端漏洞，因为需要诱使用户交互，攻击成本高，所以不被重视，但危害不容小觑。
 
 ### 防范措施
 - 在`HTTP`中加入 `X-FRAME-OPTIONS` 属性，此属性控制页面是否可被嵌入 `iframe` 中
@@ -152,5 +154,72 @@ GET类型的CSRF利用非常简单，只需要一个HTTP请求，一般会这样
 - `SAMEORIGIN`：只能被同域网站嵌套或加载
 - `ALLOW-FROM URL`：可以被指定网站嵌套或加载
 
+# 安全策略
 
+## 内容安全策略（CSP）
+`CSP(Content Security Policy 内容安全策略)`,通过它可以明确的告诉客户端浏览器当前页面的哪些外部资源可以被加载执行，而哪些又是不可以的。
 
+### CSP的意义
+`CSP`防`XSS`等攻击的利器。`CSP` 的实质就是**白名单制度**，开发者明确告诉客户端，哪些外部资源可以加载和执行，等同于提供白名单。它的实现和执行全部由浏览器完成，开发者只需提供配置。`CSP` 大大增强了网页的安全性。攻击者即使发现了漏洞，也没法注入脚本，除非还控制了一台列入了白名单的可信主机。
+
+### CSP的分类
+
+- `Content-Security-Policy` 配置好并启用后，不符合 `CSP` 的外部资源就会被阻止加载
+- `Content-Security-Policy-Report-Only` 表示不执行限制选项，只是记录违反限制的行为。它必须与`report-uri`选项配合使用。
+
+### CSP的使用
+- 通过 `HTTP` 头配置 `Content-Security-Policy`，以下配置说明该页面只允许当前源和 `https://apis.google.com` 这 2 个源的脚本加载和执行：
+```html
+Content-Security-Policy: script-src 'self' https://apis.google.com
+```
+- 通过页面 <meta> 标签配置
+```html
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' https://apis.google.com">
+```
+
+## Sandbox(安全沙箱)
+多进程的浏览器架构将主要分为两块：**浏览器内核**和**渲染内核**。而`安全沙箱能限制了渲染进程对操作系统资源的访问和修改，同时渲染进程内部也没有读写操作系统的能力`，而这些都是在浏览器内核中一一实现了，包括持久存储、网络访问和用户交互等一系列直接与操作系统交互的功能。浏览器内核和渲染内核各自职责分明，当他们需要进行数据传输的时候会通过 `IPC` 进行
+
+渲染进程的工作是进行 `HTML`、`CSS` 的解析，`JavaScript` 的执行等，而这部分内容是直接暴露给用户的，所以也是最容易被黑客利用攻击的地方，如果黑客攻击了这里就有可能获取到渲染进程的权限，进而威胁到操作系统。所以需要一道墙用来把不可信任的代码运行在一定的环境中，限制不可信代码访问隔离区之外的资源，而这道墙就是浏览器的安全沙箱。
+
+**安全沙箱的存在是为了保护客户端操作系统免受黑客攻击，但是阻止不了 `XSS` 和 `CSRF`。**
+![](https://segmentfault.com/img/remote/1460000041454111)
+
+安全沙箱是利用操作系统提供的安全技术，这样渲染进程在运行中就无法获取或修改操作系统中的数据。安全沙箱最小隔离单位是进程，所以无法保护单进程浏览器。
+
+## Iframe
+`iframe`在给我们的页面带来更多丰富的内容和能力的同时，也带来了不少的安全隐患。因为`iframe`中的内容是由第三方来提供的，默认情况下他们不受我们的控制，他们可以在`iframe`中运行`JavaScirpt`脚本、`Flash`插件、弹出对话框等等，这可能会破坏前端用户体验。
+
+### 如何让自己的网站不被其他网站的iframe引用
+
+#### js的防御方案
+将下面这段代码放到网站页面的`</body>`标签前，这样别人在通过`iframe`框架引用你的网站网页时，浏览器会自动跳转到你的网站所引用的页面上
+```html
+<script>
+if (self == top) {
+    var theBody = document.getElementsByTagName('body')[0];
+    theBody.style.display = "block";
+} else {
+    top.location = self.location;
+}
+</script>
+```
+#### 使用`X-Frame-Options`防止网页被`iframe`
+`X-FRAME-OPTIONS`是微软提出的一个`http`头，专门用来防御利用`iframe`嵌套的点击劫持攻击。
+```
+DENY               // 拒绝任何域加载
+SAMEORIGIN         // 允许同源域下加载
+ALLOW-FROM         // 可以定义允许frame加载的页面地址
+```
+### 如何禁止被使用的 `iframe` 对当前网站某些操作
+`sandbox`是`html5`的新属性，主要是提高`iframe`安全系数。`iframe`因安全问题而臭名昭著，这主要是因为`iframe`常被用于嵌入到第三方中，然后执行某些恶意操作。**这个与上面说到的安全沙箱（Sandbox）不同**
+
+现在有一场景：我的网站需要 `iframe` 引用某网站，但是不想被该网站操作`DOM`、不想加载某些`js`（广告、弹框等）、当前窗口被强行跳转链接等，我们可以设置 `sandbox` 属性:
+```javascript
+allow-same-origin     // 允许被视为同源，即可操作父级DOM或cookie等
+allow-top-navigation  // 允许当前iframe的引用网页通过url跳转链接或加载
+allow-forms           // 允许表单提交
+allow-scripts         // 允许执行脚本文件
+allow-popups          // 允许浏览器打开新窗口进行跳转
+""                    // 设置为空时上面所有允许全部禁止
+```
